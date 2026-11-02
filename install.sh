@@ -21,8 +21,21 @@ if [ "$cmake_ok" != "yes" ]; then
         | tar -xz -C /usr/local --strip-components=1
 fi
 
-if [ ! -d pufferlib ]; then
-    git clone --filter=blob:none --single-branch --branch 5.0 https://github.com/pufferai/pufferlib
+# PufferLib is a toolchain for the puffer launcher: the checkout lives under
+# $PUFFER_HOME/toolchains/<rev> and bin/puffer goes on PATH, so envs build from
+# any directory (puffer new my_env; puffer build breakout --cu). ./pufferlib
+# links to the checkout for anyone working on PufferLib itself.
+PUFFER_HOME=${PUFFER_HOME:-$HOME/.puffer}
+PUFFER_REV=${PUFFER_REV:-5.0}
+PUFFER_REPO=${PUFFER_REPO:-https://github.com/pufferai/pufferlib}
+TOOLCHAIN="$PUFFER_HOME/toolchains/$PUFFER_REV"
+if [ ! -d "$TOOLCHAIN" ]; then
+    mkdir -p "$PUFFER_HOME/toolchains"
+    git clone --filter=blob:none --single-branch --branch "$PUFFER_REV" "$PUFFER_REPO" "$TOOLCHAIN"
+fi
+[ -e pufferlib ] || ln -s "$TOOLCHAIN" pufferlib
+if [ -x "$TOOLCHAIN/bin/puffer" ]; then
+    ln -sf "$TOOLCHAIN/bin/puffer" /usr/local/bin/puffer
 fi
 
 if command -v nvcc >/dev/null; then
